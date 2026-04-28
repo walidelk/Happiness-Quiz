@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hormone Emoji Quiz</title>
+  <style>
+    :root{--bg:#ffffff;--ink:#111;--line:#111;--dop:#f5e400;--ser:#7f4ce6;--oxy:#23d7e8;--end:#ff944d;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:1400px;margin:0 auto;padding:24px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+    .status{font-size:18px;font-weight:700;padding:10px 14px;border-radius:999px;background:#f6f6f6}
+    .status.done{background:#e9f8ea;color:#166534}
+    .status.warn{background:#fff4e5;color:#9a6700}
+    .board{
+      position:relative;
+      min-height:680px;
+      background:#fff;
+      border-radius:10px;
+      overflow:hidden;
+      box-shadow:0 0 0 1px #eee inset;
+    }
+    .vline,.hline{position:absolute;background:var(--line)}
+    .vline{width:4px;top:30px;bottom:30px;left:50%;transform:translateX(-50%)}
+    .hline{height:4px;left:30px;right:30px;top:50%;transform:translateY(-50%)}
+    .quad{position:absolute;padding:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .q1{top:0;left:0;width:50%;height:50%}.q2{top:0;right:0;width:50%;height:50%}.q3{bottom:0;left:0;width:50%;height:50%}.q4{bottom:0;right:0;width:50%;height:50%}
+    .title{font-size:56px;line-height:1;font-weight:800;margin:0 0 28px}
+    .dop{color:var(--dop)} .ser{color:var(--ser)} .oxy{color:var(--oxy)} .end{color:var(--end)}
+    .dropzone{min-height:100px;width:100%;display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;padding:10px}
+    .dropzone.over{outline:3px dashed #999;outline-offset:-10px;border-radius:16px;background:rgba(0,0,0,.02)}
+    .tray{margin-top:18px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;padding:12px}
+    .chip{display:inline-flex;align-items:center;justify-content:center;min-width:56px;min-height:56px;padding:6px 12px;border-radius:14px;background:#fff;border:2px solid #ddd;box-shadow:0 2px 6px rgba(0,0,0,.06);font-size:34px;cursor:grab;user-select:none}
+    .chip:active{cursor:grabbing}
+    .chip.correct{border-color:#22c55e;background:#ecfdf3}
+    .chip.wrong{border-color:#ef4444;background:#fef2f2}
+    .label{font-size:26px;font-weight:500;margin:0 0 8px;min-height:34px}
+    .small{font-size:15px;color:#666;text-align:center;margin-top:10px}
+    .finish{display:none;margin-top:14px;padding:14px 18px;border-radius:14px;background:#111;color:#fff;font-size:18px;font-weight:700;text-align:center}
+    .finish.show{display:block}
+    @media (max-width:900px){
+      .board{min-height:900px}
+      .vline{left:50%}.hline{top:50%}
+      .title{font-size:34px}
+      .label{font-size:18px}
+      .chip{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="status" id="status">Drag the emojis to the correct hormone</div>
+      <button id="resetBtn" style="padding:10px 14px;border:0;border-radius:10px;background:#111;color:#fff;font-weight:700;cursor:pointer">Reset</button>
+    </div>
+
+    <div class="board" id="board">
+      <div class="vline"></div>
+      <div class="hline"></div>
+
+      <div class="quad q1">
+        <h2 class="title dop">Dopamine</h2>
+        <div class="dropzone" data-hormone="dopamine"></div>
+      </div>
+      <div class="quad q2">
+        <h2 class="title ser">Serotonin</h2>
+        <div class="dropzone" data-hormone="serotonin"></div>
+      </div>
+      <div class="quad q3">
+        <h2 class="title oxy">Oxytocin</h2>
+        <div class="dropzone" data-hormone="oxytocin"></div>
+      </div>
+      <div class="quad q4">
+        <h2 class="title end">Endorphins</h2>
+        <div class="dropzone" data-hormone="endorphins"></div>
+      </div>
+    </div>
+
+    <div class="tray" id="tray"></div>
+    <div class="finish" id="finish"></div>
+    <div class="small">Drop each emoji on the best matching hormone. When all emojis are placed, the page will show which ones are correct and which ones are not.</div>
+  </div>
+
+  <script>
+    const items = [
+      {emoji:'🚀', hormone:'dopamine', label:'Advancing a goal'},
+      {emoji:'🧖‍♀️', hormone:'dopamine', label:'Doing self-care activities'},
+      {emoji:'🎉', hormone:'dopamine', label:'Celebrating little wins'},
+      {emoji:'🐶', hormone:'oxytocin', label:'Playing with a pet'},
+      {emoji:'🤝', hormone:'oxytocin', label:'Holding hands'},
+      {emoji:'🫂', hormone:'oxytocin', label:'Hugging your loved ones'},
+      {emoji:'☀️', hormone:'serotonin', label:'Sun exposure'},
+      {emoji:'🏃', hormone:'serotonin', label:'Running'},
+      {emoji:'🧘', hormone:'serotonin', label:'Meditating'},
+      {emoji:'🚴', hormone:'endorphins', label:'Exercising'},
+      {emoji:'🍫', hormone:'endorphins', label:'Dark chocolate'},
+      {emoji:'🪔', hormone:'endorphins', label:'Essential oils'}
+    ];
+
+    const tray = document.getElementById('tray');
+    const finish = document.getElementById('finish');
+    const status = document.getElementById('status');
+    const dropzones = [...document.querySelectorAll('.dropzone')];
+    const resetBtn = document.getElementById('resetBtn');
+
+    function renderTray(){
+      tray.innerHTML = '';
+      items.forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'chip';
+        el.draggable = true;
+        el.id = 'chip-' + i;
+        el.dataset.hormone = item.hormone;
+        el.dataset.label = item.label;
+        el.textContent = item.emoji;
+        el.title = item.label;
+        el.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', el.id);
+        });
+        tray.appendChild(el);
+      });
+      bindDropzones();
+      finish.className = 'finish';
+      finish.textContent = '';
+      status.textContent = 'Drag the emojis to the correct hormone';
+      status.className = 'status';
+    }
+
+    function bindDropzones(){
+      dropzones.forEach(zone => {
+        zone.ondragover = e => { e.preventDefault(); zone.classList.add('over'); };
+        zone.ondragleave = () => zone.classList.remove('over');
+        zone.ondrop = e => {
+          e.preventDefault();
+          zone.classList.remove('over');
+          const id = e.dataTransfer.getData('text/plain');
+          const chip = document.getElementById(id);
+          if (!chip) return;
+          zone.appendChild(chip);
+          checkState();
+        };
+      });
+    }
+
+    function allPlaced(){
+      return document.querySelectorAll('#tray .chip').length === 0;
+    }
+
+    function checkState(){
+      const placed = [...document.querySelectorAll('.dropzone .chip')];
+      if (placed.length === 0) return;
+      placed.forEach(chip => {
+        const zone = chip.parentElement;
+        chip.classList.remove('correct','wrong');
+        if (chip.dataset.hormone === zone.dataset.hormone) chip.classList.add('correct');
+        else chip.classList.add('wrong');
+      });
+      if (allPlaced()) {
+        const wrong = [...document.querySelectorAll('.chip.wrong')];
+        if (wrong.length === 0) {
+          finish.textContent = 'All emojis are placed. Everything is correct!';
+          status.textContent = 'Finished — no more emojis left to drag';
+          status.className = 'status done';
+        } else {
+          finish.textContent = 'All emojis are placed. Some are in the wrong hormone box: ' + wrong.map(x => x.textContent).join(' ');
+          status.textContent = 'Finished — some emojis are incorrect';
+          status.className = 'status warn';
+        }
+        finish.classList.add('show');
+      } else {
+        finish.classList.remove('show');
+        const remaining = document.querySelectorAll('#tray .chip').length;
+        status.textContent = remaining + ' emoji left to drag';
+        status.className = 'status';
+      }
+    }
+
+    resetBtn.addEventListener('click', () => {
+      dropzones.forEach(z => z.innerHTML = '');
+      renderTray();
+    });
+
+    renderTray();
+  </script>
+</body>
+</html>
